@@ -1,0 +1,42 @@
+# 环境变量和敏感配置
+.env
+.env.local
+.env.*.local
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
+
+# IDE文件
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 日志和临时文件
+*.log
+*.tmp
+*.temp
+logs/
+tmp/
+temp/
+
+# 输出和产物
+output/
+workspace-data/
+build/
+dist/
+
+# 工具配置（本地配置）
+config/proxy/*.conf
+config/compliance/*.conf
+!config/proxy/.gitkeep
+!config/compliance/.gitkeep
+
+# 录屏和录制文件（可选忽略）
+compliance/recordings/
+
+# 证据和敏感数据（建议加密存储）
+compliance/evidence/
+compliance/logs/
