@@ -1,173 +1,120 @@
-# Penetration Testing & Security Research Workspace
+# Pen Test Workspace - Skills Library
 
-> An AI Agent-powered workspace for expert-level security testing and research operations.
+> 供 Claude Code / Codex / 其他 Agent 调用的安全测试技能库
 
-## Overview
+## 概述
 
-This workspace provides a comprehensive environment for conducting security assessments, penetration testing, and security research. It is designed to work with AI agents to automate and streamline security testing workflows.
+这个分支是**纯Skills库**，没有自主Agent逻辑，没有内置LLM。提供简单、清晰的API，供外部Agent控制使用。
 
-## Directory Structure
+```python
+from pen_test_workspace.skills import scan_website, nmap_scan
+
+# 外部LLM可以这样调用我们的技能
+result = scan_website("https://example.com")
+# 外部LLM自己分析结果，做决策
+```
+
+---
+
+## 快速开始
+
+### 1. 安装依赖
+
+```bash
+pip install -r requirements.txt
+```
+
+### 2. 导入并使用技能
+
+```python
+from pen_test_workspace.skills import (
+    scan_website,
+    test_xss,
+    test_sql_injection,
+    nmap_scan,
+    generate_markdown_report
+)
+
+# 扫描网站
+scan_result = scan_website("https://example.com")
+
+# 扫描端口
+nmap_result = nmap_scan("192.168.1.1")
+
+# 生成报告
+report = generate_markdown_report(
+    findings=scan_result["findings"],
+    target_info={"url": "https://example.com"}
+)
+```
+
+更多示例见 [USAGE_EXAMPLE.md](./USAGE_EXAMPLE.md)
+
+---
+
+## 可用的技能
+
+### Web安全
+| 技能 | 说明 |
+|-----|------|
+| `scan_website(url)` | 扫描网站基础安全问题 |
+| `test_xss(url, param)` | 测试XSS漏洞 |
+| `test_sql_injection(url, param)` | 测试SQL注入漏洞 |
+| `crawl(start_url)` | 爬取网站链接 |
+
+### 网络安全
+| 技能 | 说明 |
+|-----|------|
+| `nmap_scan(target, ports)` | Nmap扫描 |
+| `port_scan(target, port_list)` | 快速端口扫描 |
+| `service_discovery(target)` | 服务发现 |
+
+### 报告
+| 技能 | 说明 |
+|-----|------|
+| `generate_markdown_report(findings)` | 生成Markdown报告 |
+| `generate_html_report(findings)` | 生成HTML报告 |
+
+---
+
+## 目录结构
 
 ```
 pen-test-workspace/
-├── agent/                    # AI Agent core system
-│   ├── core/                 # Main agent components
-│   ├── memory/               # Memory system (5-layer)
-│   ├── knowledge/            # Knowledge graph
-│   ├── workflow/             # Workflow engine
-│   ├── quality/              # Quality control
-│   ├── awareness/            # Self-awareness system
-│   └── meta/                 # Meta monitoring system
+├── pen_test_workspace/       # ✅ 主要技能库 (新增)
+│   ├── __init__.py
+│   └── skills/
+│       ├── __init__.py
+│       ├── web.py            # Web安全技能
+│       ├── network.py        # 网络安全技能
+│       └── report.py         # 报告生成技能
 │
-├── red-team/                 # Red team operations
-│   ├── web-security/         # Web application testing
-│   ├── binary-security/      # Binary/PWN testing
-│   ├── mobile-app/           # Mobile app security
-│   ├── miniprogram/          # Mini-program security
-│   ├── domain-pentest/       # Active Directory/Domain testing
-│   ├── phishing/             # Phishing campaigns
-│   ├── anonymity/            # Anonymity & proxy tools
-│   └── infrastructure/       # Infrastructure testing
+├── ai-agent/                 # (保留，可用于参考)
+│   ├── skills/               # 原有技能实现
+│   └── harness/              # 工具封装
 │
-├── blue-team/                # Blue team operations
-│   ├── incident-response/    # Incident response
-│   ├── threat-intel/         # Threat intelligence
-│   ├── monitoring/           # Security monitoring
-│   └── hardening/            # System hardening
-│
-├── purple-team/              # Purple team operations
-│   ├── attack-simulation/    # Attack simulation
-│   ├── defense-validation/   # Defense validation
-│   ├── forensics/            # Digital forensics
-│   └── training/             # Training exercises
-│
-├── compliance/               # Compliance & recording
-│   ├── recordings/           # Screen/terminal/network recordings
-│   ├── logs/                 # Audit/command/session logs
-│   ├── evidence/             # Evidence management
-│   ├── policies/             # Compliance policies
-│   └── checklists/           # Compliance checklists
-│
-├── shared/                   # Shared resources
-│   ├── tools/                # Common tools
-│   ├── wordlists/            # Wordlists and dictionaries
-│   ├── templates/            # Report templates
-│   ├── datasets/             # Test datasets
-│   └── documentation/        # Shared documentation
-│
-├── ai-agent/                 # AI agent modules
-│   ├── skills/               # Skill implementations
-│   ├── harness/              # Harness framework
-│   ├── prompts/              # Prompt templates
-│   └── workflows/            # Workflow definitions
-│
-├── config/                   # Configuration files
-│   ├── tools/                # Tool configurations
-│   ├── environment/          # Environment configs
-│   ├── proxy/                # Proxy/VPN configs
-│   ├── compliance/           # Compliance configs
-│   └── profiles/             # Testing profiles
-│
-├── output/                   # Output directory
-│   ├── reports/              # Generated reports
-│   ├── logs/                 # Execution logs
-│   ├── artifacts/            # Testing artifacts
-│   └── screenshots/          # Screenshots
-│
-└── workspace-data/           # Workspace data
-    ├── sessions/             # Session data
-    ├── cache/                # Cache files
-    └── temp/                 # Temporary files
+├── USAGE_EXAMPLE.md          # ✅ 使用示例
+├── BRANCH_README.md          # 分支说明
+├── requirements.txt
+└── README.md                 # (本文件)
 ```
 
-## Quick Start
+---
 
-### 1. Environment Setup
+## 分支说明
 
-```bash
-# Copy environment configuration
-cp .env.example .env
+| 分支 | 用途 |
+|-----|------|
+| `skills-library` | (当前) 纯Skills库，供外部Agent调用 |
+| `autonomous-agent` | 完整的自主AI Agent，内置LLM |
+| `master` | 主分支，作为基础 |
 
-# Edit .env with your API keys and settings
-nano .env
+---
 
-# Run setup script
-bash scripts/setup_env.sh
-```
+## 免责声明
 
-### 2. Install Tools
-
-```bash
-# Install security tools (requires root privileges)
-sudo bash scripts/install_tools.sh
-```
-
-### 3. Activate Environment
-
-```bash
-source .venv/bin/activate
-```
-
-### 4. Run Agent
-
-```bash
-# Start the AI agent
-python agent/start.py
-```
-
-## Workflows
-
-Available workflows are defined in `ai-agent/workflows/`:
-
-- `web_pentest.yaml` - Web application penetration testing
-- `incident_response.yaml` - Security incident response
-- `full_pentest_session.yaml` - Complete pentest with compliance
-- `domain_pentest.yaml` - Active Directory testing
-- `forensics.yaml` - Digital forensics analysis
-- `anonymity_test.yaml` - Anonymity testing workflow
-
-## Configuration
-
-All configuration files are located in the `config/` directory:
-
-- `config/agent/` - Agent core and memory settings
-- `config/compliance/` - Recording and evidence management
-- `config/proxy/` - Tor, proxy chains, and VPN settings
-- `config/tools/` - Security tool configurations
-- `config/profiles/` - Testing profile templates
-
-## Compliance
-
-This workspace enforces compliance requirements:
-
-- Mandatory screen and terminal recording
-- Evidence chain of custody tracking
-- File integrity verification (SHA-256)
-- Digital signature support
-- Complete audit logging
-
-## Security
-
-- Never commit `.env` files with actual credentials
-- Use `.env.example` as a template
-- All evidence should be hashed and signed
-- Maintain proper authorization before testing
-
-## Requirements
-
-- Python 3.9+
-- Docker (optional, for tool isolation)
-- Root access (for tool installation)
-- Network access (for updates and API calls)
-
-## License
-
-[Appropriate License]
-
-## Disclaimer
-
-This workspace is intended for authorized security testing, research, and educational purposes only. Users must:
-- Obtain explicit written authorization before testing
-- Comply with all applicable laws and regulations
-- Minimize potential damage
-- Report all discovered vulnerabilities promptly
+仅用于授权的安全测试、研究和教育目的。用户必须:
+- 在测试前获得明确的书面授权
+- 遵守所有适用的法律法规
+- 最小化潜在的损害
+- 及时报告发现的所有漏洞
