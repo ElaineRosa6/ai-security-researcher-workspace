@@ -1,0 +1,31 @@
+screen_recording:
+  enabled: true
+  output_directory: "compliance/recordings/screen"
+  format: "mp4"
+  fps: 30
+  audio: true
+  quality: "high"
+
+terminal_recording:
+  enabled: true
+  output_directory: "compliance/recordings/terminal"
+  format: "cast"
+  include_timestamps: true
+
+network_capture:
+  enabled: false
+  output_directory: "compliance/recordings/network"
+  format: "pcap"
+  filter: "not port 22"
+  max_size_mb: 1000
+
+audit_logging:
+  enabled: true
+  log_directory: "compliance/logs/audit"
+  include_commands: true
+  include_network: true
+  include_file_access: true
+  log_format: "json"
+  rotation:
+    max_size_mb: 100
+    max_files: 10

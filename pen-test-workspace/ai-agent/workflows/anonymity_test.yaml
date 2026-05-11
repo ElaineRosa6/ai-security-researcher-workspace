@@ -1,0 +1,76 @@
+name: Anonymity Test
+description: Test anonymity and proxy configurations
+
+phases:
+  - name: recording_start
+    description: Start compliance recordings
+    order: 1
+    tasks:
+      - id: rec_screen
+        name: Start Screen Recording
+        skill: RecordingSkill.start_screen_recording
+        timeout: 30
+      - id: rec_terminal
+        name: Start Terminal Recording
+        skill: RecordingSkill.start_terminal_recording
+        timeout: 30
+
+  - name: anonymity_configure
+    description: Configure anonymity
+    order: 2
+    tasks:
+      - id: anon_tor
+        name: Setup Tor
+        skill: AnonymitySkill.setup_tor
+        timeout: 60
+      - id: anon_mac
+        name: Change MAC Address
+        skill: AnonymitySkill.change_mac_address
+        timeout: 30
+      - id: anon_proxy
+        name: Setup Proxy Chain
+        skill: AnonymitySkill.setup_proxy_chain
+        timeout: 60
+
+  - name: anonymity_test
+    description: Test anonymity
+    order: 3
+    tasks:
+      - id: test_anon
+        name: Check Anonymity
+        skill: AnonymitySkill.check_anonymity
+        timeout: 60
+      - id: test_ip_leak
+        name: Check IP Leak
+        skill: AnonymitySkill.check_ip_leak
+        timeout: 60
+      - id: test_dns_leak
+        name: Check DNS Leak
+        skill: AnonymitySkill.check_dns_leak
+        timeout: 60
+
+  - name: tool_routing
+    description: Test tool routing
+    order: 4
+    tasks:
+      - id: route_tool
+        name: Route Tool Traffic
+        skill: AnonymitySkill.route_traffic
+        timeout: 120
+
+  - name: complete
+    description: Complete and archive
+    order: 5
+    tasks:
+      - id: complete_record
+        name: Stop Recordings
+        skill: RecordingSkill.stop_screen_recording
+        timeout: 30
+      - id: complete_hash
+        name: Generate Evidence Hash
+        skill: EvidenceSkill.generate_hash
+        timeout: 30
+      - id: complete_archive
+        name: Archive Session
+        skill: ComplianceSkill.archive_session
+        timeout: 60

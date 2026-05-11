@@ -1,0 +1,60 @@
+name: Forensic Analysis
+description: Digital forensics and evidence analysis workflow
+
+phases:
+  - name: evidence_acquisition
+    description: Acquire and validate evidence
+    order: 1
+    tasks:
+      - id: acquire_disk
+        name: Acquire Disk Image
+        skill: EvidenceSkill.create_forensic_image
+        timeout: 1800
+      - id: validate_integrity
+        name: Validate Integrity
+        skill: EvidenceSkill.verify_hash
+        timeout: 60
+
+  - name: artifact_processing
+    description: Process and extract artifacts
+    order: 2
+    tasks:
+      - id: process_disk
+        name: Analyze Disk Image
+        skill: ForensicsSkill.analyze_disk_image
+        timeout: 900
+      - id: recover_deleted
+        name: Recover Deleted Files
+        skill: ForensicsSkill.recover_deleted_files
+        timeout: 600
+
+  - name: timeline_analysis
+    description: Build and analyze timeline
+    order: 3
+    tasks:
+      - id: timeline_build
+        name: Build Timeline
+        skill: ForensicsSkill.build_timeline
+        timeout: 600
+      - id: timeline_correlate
+        name: Correlate Events
+        skill: ForensicsSkill.analyze_network_traffic
+        timeout: 600
+
+  - name: attribution
+    description: Attack attribution
+    order: 4
+    tasks:
+      - id: attrib_trace
+        name: Trace Attribution
+        skill: ForensicsSkill.trace_attribution
+        timeout: 600
+
+  - name: reporting
+    description: Generate forensics report
+    order: 5
+    tasks:
+      - id: report_forensics
+        name: Generate Forensics Report
+        skill: ForensicsSkill.analyze_disk_image
+        timeout: 120

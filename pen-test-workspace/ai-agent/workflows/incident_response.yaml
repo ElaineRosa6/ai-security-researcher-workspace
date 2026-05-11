@@ -1,0 +1,75 @@
+name: Incident Response
+description: Security incident response workflow
+
+phases:
+  - name: preparation
+    description: Preparation phase
+    order: 1
+    tasks:
+      - id: prep_triage
+        name: Triage Incident
+        skill: IncidentResponseSkill.triage_incident
+        timeout: 300
+
+  - name: identification
+    description: Identification and analysis
+    order: 2
+    tasks:
+      - id: id_evidence
+        name: Collect Evidence
+        skill: IncidentResponseSkill.collect_evidence
+        params:
+          evidence_type: memory
+        timeout: 600
+      - id: id_logs
+        name: Analyze Logs
+        skill: IncidentResponseSkill.analyze_logs
+        timeout: 600
+      - id: id_ioc
+        name: IOC Search
+        skill: ThreatIntelSkill.search_ioc
+        timeout: 300
+
+  - name: containment
+    description: Contain the incident
+    order: 3
+    depends_on:
+      - identification
+    tasks:
+      - id: cont_network
+        name: Network Containment
+        skill: ToolsSkill.execute_command
+        timeout: 300
+
+  - name: eradication
+    description: Eradicate threat
+    order: 4
+    depends_on:
+      - containment
+    tasks:
+      - id: eradi_memory
+        name: Memory Analysis
+        skill: IncidentResponseSkill.analyze_memory_dump
+        timeout: 600
+
+  - name: recovery
+    description: Recovery phase
+    order: 5
+    tasks:
+      - id: rec_validate
+        name: Validate Eradication
+        skill: IncidentResponseSkill.analyze_logs
+        timeout: 300
+
+  - name: reporting
+    description: Document and report
+    order: 6
+    tasks:
+      - id: report_incident
+        name: Generate Incident Report
+        skill: IncidentResponseSkill.generate_report
+        timeout: 120
+      - id: report_timeline
+        name: Create Timeline
+        skill: IncidentResponseSkill.create_timeline
+        timeout: 120

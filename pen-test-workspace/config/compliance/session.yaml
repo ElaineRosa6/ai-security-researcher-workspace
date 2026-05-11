@@ -1,0 +1,25 @@
+session:
+  auto_start: true
+  auto_stop: true
+  auto_archive: true
+  auto_save_interval_seconds: 300
+
+pre_session_checklist:
+  - verify_authorization
+  - check_anonymity_settings
+  - test_recording_tools
+  - confirm_target_scope
+  - review_rules_of_engagement
+
+post_session_checklist:
+  - verify_all_recordings
+  - generate_hashes
+  - seal_evidence
+  - create_report
+  - archive_session
+  - cleanup_sensitive_data
+
+session_storage:
+  current: "workspace-data/current-session"
+  history: "workspace-data/sessions-history"
+  max_concurrent: 5

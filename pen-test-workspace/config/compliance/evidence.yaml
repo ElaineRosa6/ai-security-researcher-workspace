@@ -1,0 +1,28 @@
+hash_algorithm: "sha256"
+sign_evidence: true
+gpg_key_path: ""
+
+chain_of_custody:
+  enabled: true
+  auto_document: true
+  require_actor: true
+  require_signature: true
+
+retention:
+  active_days: 90
+  archived_days: 365
+  auto_archive: true
+
+encryption:
+  enabled: false
+  algorithm: "aes-256-gcm"
+  key_source: "env:ENCRYPTION_KEY"
+
+evidence_types:
+  - screenshot
+  - log
+  - pcap
+  - hash
+  - memory_dump
+  - disk_image
+  - report

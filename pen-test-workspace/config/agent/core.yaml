@@ -1,0 +1,84 @@
+agent:
+  name: "SecurityExpertAgent"
+  version: "1.0"
+  role: "expert_pentester"
+  
+  capabilities:
+    - web_security
+    - binary_security
+    - mobile_security
+    - domain_pentest
+    - incident_response
+    - forensics
+    - phishing
+    - anonymity
+  
+  behavior:
+    autonomous: true
+    ask_for_confirmation: false
+    risk_aversion: "balanced"
+    thoroughness: "high"
+    explain_decisions: true
+  
+  personality:
+    curiosity: "high"
+    thoroughness: "high"
+    attention_to_detail: "high"
+    creativity: "high"
+
+memory:
+  short_term:
+    storage: "in_memory"
+    capacity: 1000
+    retention_hours: 24
+    items:
+      - recent_actions
+      - active_context
+      - working_memory
+  
+  medium_term:
+    storage: "session_db"
+    capacity: "per_session"
+    retention_days: 30
+    items:
+      - discoveries
+      - target_profile
+      - attack_history
+      - decision_history
+  
+  long_term:
+    storage: "knowledge_db"
+    persistent: true
+    learning_enabled: true
+    items:
+      - vulnerability_db
+      - techniques
+      - tool_knowledge
+      - best_practices
+      - experience
+
+workflow:
+  auto_adapt: true
+  state_review_frequency: "after_each_action"
+  fallback_mechanism: true
+  max_retries: 3
+  timeout_seconds: 3600
+
+quality:
+  validation_enabled: true
+  self_assessment: true
+  evidence_requirements: "strict"
+  compliance_checks: true
+  min_confidence_threshold: 0.7
+
+compliance:
+  recording_enabled: true
+  audit_logging: true
+  evidence_signing: true
+  session_retention_days: 90
+
+anonymity:
+  tor_enabled: true
+  proxy_chain_enabled: false
+  mac_spoofing: false
+  anonymity_check_interval: 300

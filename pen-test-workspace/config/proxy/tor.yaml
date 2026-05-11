@@ -1,0 +1,18 @@
+enabled: true
+socks_port: 9050
+control_port: 9051
+control_password: ""
+
+torrc_config: |
+  SOCKSPort 9050
+  ControlPort 9051
+  CookieAuthentication 1
+  DataDirectory /var/lib/tor
+  
+exit_nodes:
+entry_nodes:
+exclude_nodes:
+
+bridges:
+  enabled: false
+  type: "obfs4"

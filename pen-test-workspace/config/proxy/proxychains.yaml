@@ -1,0 +1,16 @@
+enabled: true
+chain_type: "dynamic"
+proxy_dns: true
+localnet: "127.0.0.0/8"
+
+proxies:
+  - type: "socks5"
+    host: "127.0.0.1"
+    port: 9050
+    # Add more proxies as needed
+    # - type: "http"
+    #   host: "proxy.example.com"
+    #   port: 8080
+
+timeout: 120
+retry: 2

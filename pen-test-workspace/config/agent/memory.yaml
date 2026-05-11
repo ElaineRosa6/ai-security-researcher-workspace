@@ -1,0 +1,47 @@
+memory_layers:
+  short_term:
+    storage: "in_memory"
+    capacity: "1000_items"
+    eviction_policy: "lru"
+    retention_hours: 24
+    
+  medium_term:
+    storage: "session_db"
+    capacity: "per_session"
+    eviction_policy: "time_based"
+    retention_days: 30
+    consolidation_interval_hours: 6
+  
+  long_term:
+    storage: "knowledge_db"
+    persistent: true
+    learning_enabled: true
+    consolidation_interval_hours: 24
+  
+  episodic:
+    storage: "episode_db"
+    capacity: "unlimited"
+    retention_days: 365
+  
+  semantic:
+    storage: "semantic_db"
+    persistent: true
+    learning_enabled: true
+
+consolidation:
+  enabled: true
+  schedule: "0 */6 * * *"
+  criteria:
+    min_confidence: 0.9
+    min_access_count: 3
+
+forgetting:
+  enabled: true
+  strategy: "importance_based"
+  max_age_days: 90
+  min_importance_score: 0.5
+
+retrieval:
+  default_limit: 100
+  include_context: true
+  rank_by: "relevance"

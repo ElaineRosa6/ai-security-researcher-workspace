@@ -1,0 +1,24 @@
+profiles:
+  default:
+    name: "Default"
+    description: "Standard penetration testing profile"
+    recording: true
+    anonymity: false
+    aggressiveness: "normal"
+  
+  stealth:
+    name: "Stealth"
+    description: "Low-profile testing with maximum anonymity"
+    recording: true
+    anonymity: true
+    aggressiveness: "low"
+  
+  full_audit:
+    name: "Full Audit"
+    description: "Comprehensive audit with all checks"
+    recording: true
+    anonymity: false
+    aggressiveness: "high"
+    extended_scan: true
+
+active_profile: "default"

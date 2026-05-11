@@ -1,0 +1,27 @@
+nmap:
+  default_flags: "-sV -sC -p-"
+  script_path: "/usr/share/nmap/scripts"
+  output_format: "xml"
+  timing: "T3"
+
+sqlmap:
+  risk: 1
+  level: 1
+  threads: 5
+  batch: true
+
+burpsuite:
+  api_url: "http://127.0.0.1:1337"
+  api_key: ""
+  targets: []
+
+gobuster:
+  threads: 10
+  wordlist: "/usr/share/wordlists/dirb/common.txt"
+  extensions: ""
+
+nuclei:
+  templates_dir: ""
+  rate_limit: 150
+  bulk_size: 25
+  timeout: 5

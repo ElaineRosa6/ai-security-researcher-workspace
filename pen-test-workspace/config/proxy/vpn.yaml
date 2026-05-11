@@ -1,0 +1,16 @@
+providers:
+  - name: "vpn1"
+    type: "openvpn"
+    config_path: "/path/to/vpn1.ovpn"
+    enabled: false
+  
+  - name: "vpn2"
+    type: "wireguard"
+    config_path: "/etc/wireguard/wg0.conf"
+    enabled: false
+
+default_route: false
+kill_switch: false
+dns_servers:
+  - "1.1.1.1"
+  - "1.0.0.1"
