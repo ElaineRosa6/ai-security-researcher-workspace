@@ -67,12 +67,20 @@ class SecurityExpertAgent:
         self.meta_system = MetaSystem()
         
         # Skills management
+        self.skills_manager = None
         try:
             from agent.skills import SkillsManager
             self.skills_manager = SkillsManager(self.config)
         except Exception as e:
             logger.warning(f"Failed to initialize SkillsManager: {e}")
-            self.skills_manager = None
+        
+        # Harness management
+        self.harness_manager = None
+        try:
+            from agent.harness import HarnessManager
+            self.harness_manager = HarnessManager(self.config)
+        except Exception as e:
+            logger.warning(f"Failed to initialize HarnessManager: {e}")
         
         self.target_profile = {}
         self.discoveries = []
@@ -97,7 +105,8 @@ class SecurityExpertAgent:
             "status": "initialized",
             "session_id": self.session_id,
             "start_time": self.start_time.isoformat(),
-            "capabilities": self.config.get('capabilities', [])
+            "skills_count": len(self.brain.skills_registry) if hasattr(self.brain, 'skills_registry') else 0,
+            "harnesses_count": len(self.harness_manager.list_harnesses()) if self.harness_manager else 0
         }
     
     def start_task(self, user_requirement: str) -> Dict[str, Any]:
@@ -178,7 +187,7 @@ class SecurityExpertAgent:
                 skill_result = self.brain.execute_skill(skill_name, task)
                 execution_record['result'] = skill_result
                 execution_record['status'] = 'success'
-                execution_record['discoveries'] = skill_result.get('discoveries', [])
+                execution_record['discoveries'] = skill_result.get('findings', skill_result.get('discoveries', []))
             else:
                 execution_record['status'] = 'skipped'
                 execution_record['reason'] = 'No skill specified'
