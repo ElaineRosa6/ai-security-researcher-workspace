@@ -1,5 +1,6 @@
 """Agent Core Package"""
 from .brain import Brain
+from .llm_client import LLMClient
 
 # Import from relative modules
 import sys
@@ -19,6 +20,7 @@ from agent.meta.meta_system import MetaSystem
 
 __all__ = [
     'Brain',
+    'LLMClient',
     'MemoryManager',
     'KnowledgeGraph',
     'WorkflowEngine',

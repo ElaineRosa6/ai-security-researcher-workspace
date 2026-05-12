@@ -10,6 +10,7 @@ from typing import Dict, List, Optional, Any
 from pathlib import Path
 
 from .brain import Brain
+from .llm_client import LLMClient
 from . import (
     MemoryManager, KnowledgeGraph, WorkflowEngine, StateTracker,
     Validator, SelfAssessment, Auditor, AgentAwareness, MetaSystem
@@ -36,6 +37,22 @@ class SecurityExpertAgent:
         self.self_assessment = SelfAssessment([], self.memory)
         self.awareness = AgentAwareness(self.state_tracker, self.memory)
         self.meta_system = MetaSystem()
+        
+        # LLM and Prompts
+        llm_config = config.get('llm', {})
+        self.llm = LLMClient(
+            provider=llm_config.get('provider', 'mock'),
+            model=llm_config.get('model')
+        )
+        
+        # Load prompts
+        try:
+            from agent.prompts import PromptLoader
+            self.prompt_loader = PromptLoader()
+            self.system_prompt = self.prompt_loader.get('system_prompt') or ""
+        except Exception as e:
+            logger.warning(f"Failed to load prompts: {e}")
+            self.system_prompt = ""
         
         self.target_profile = {}
         self.discoveries = []
