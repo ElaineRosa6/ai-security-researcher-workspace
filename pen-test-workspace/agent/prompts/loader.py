@@ -3,9 +3,8 @@ Prompt Loader - 提示词加载和管理
 """
 import os
 import logging
-from typing import Dict, Optional, Any
+from typing import Dict, Optional
 from pathlib import Path
-from jinja2 import Template
 
 logger = logging.getLogger(__name__)
 
@@ -40,8 +39,12 @@ class PromptLoader:
         return self._prompts.get(name)
     
     def render(self, name: str, **kwargs) -> Optional[str]:
-        """渲染模板"""
+        """渲染模板（简化版，不使用Jinja2）"""
         raw = self.get(name)
         if not raw:
             return None
-        return Template(raw).render(**kwargs)
+        # 简单的字符串替换替代Jinja2
+        for key, value in kwargs.items():
+            raw = raw.replace(f"{{{key}}}", str(value))
+            raw = raw.replace(f"{{{{{key}}}}}", str(value))
+        return raw

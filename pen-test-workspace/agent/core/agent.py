@@ -27,18 +27,7 @@ class SecurityExpertAgent:
         self.session_id = self._generate_session_id()
         self.start_time = None
         
-        self.memory = MemoryManager(config.get('memory', {}))
-        self.knowledge = KnowledgeGraph()
-        self.state_tracker = StateTracker()
-        self.workflow_engine = WorkflowEngine(self.state_tracker, self.memory)
-        self.brain = Brain(self.memory, self.knowledge, self.state_tracker)
-        self.validator = Validator()
-        self.auditor = Auditor(self.session_id)
-        self.self_assessment = SelfAssessment([], self.memory)
-        self.awareness = AgentAwareness(self.state_tracker, self.memory)
-        self.meta_system = MetaSystem()
-        
-        # LLM and Prompts
+        # LLM and Prompts FIRST
         llm_config = config.get('llm', {})
         self.llm = LLMClient(
             provider=llm_config.get('provider', 'mock'),
@@ -46,6 +35,7 @@ class SecurityExpertAgent:
         )
         
         # Load prompts
+        self.prompt_loader = None
         try:
             from agent.prompts import PromptLoader
             self.prompt_loader = PromptLoader()
@@ -53,6 +43,36 @@ class SecurityExpertAgent:
         except Exception as e:
             logger.warning(f"Failed to load prompts: {e}")
             self.system_prompt = ""
+        
+        # Initialize core components ONCE
+        self.memory = MemoryManager(config.get('memory', {}))
+        self.knowledge = KnowledgeGraph()
+        self.state_tracker = StateTracker()
+        self.workflow_engine = WorkflowEngine(self.state_tracker, self.memory)
+        
+        # Initialize Brain with LLM and Prompts
+        self.brain = Brain(
+            self.memory, 
+            self.knowledge, 
+            self.state_tracker,
+            llm=self.llm,
+            prompt_loader=self.prompt_loader
+        )
+        
+        # Other components
+        self.validator = Validator()
+        self.auditor = Auditor(self.session_id)
+        self.self_assessment = SelfAssessment([], self.memory)
+        self.awareness = AgentAwareness(self.state_tracker, self.memory)
+        self.meta_system = MetaSystem()
+        
+        # Skills management
+        try:
+            from agent.skills import SkillsManager
+            self.skills_manager = SkillsManager(self.config)
+        except Exception as e:
+            logger.warning(f"Failed to initialize SkillsManager: {e}")
+            self.skills_manager = None
         
         self.target_profile = {}
         self.discoveries = []
@@ -66,6 +86,10 @@ class SecurityExpertAgent:
         """Initialize the agent"""
         self.start_time = datetime.now()
         self.state_tracker.transition_to("INITIALIZED", "Agent initialized")
+        
+        # Register all skills
+        if self.skills_manager:
+            self.skills_manager.register_all(self.brain)
         
         logger.info(f"Agent initialized with session ID: {self.session_id}")
         
