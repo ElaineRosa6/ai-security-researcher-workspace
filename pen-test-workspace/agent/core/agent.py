@@ -10,6 +10,7 @@ from typing import Dict, List, Optional, Any
 from pathlib import Path
 
 from .brain import Brain
+from .llm_client import LLMClient
 from . import (
     MemoryManager, KnowledgeGraph, WorkflowEngine, StateTracker,
     Validator, SelfAssessment, Auditor, AgentAwareness, MetaSystem
@@ -26,16 +27,60 @@ class SecurityExpertAgent:
         self.session_id = self._generate_session_id()
         self.start_time = None
         
+        # LLM and Prompts FIRST
+        llm_config = config.get('llm', {})
+        self.llm = LLMClient(
+            provider=llm_config.get('provider', 'mock'),
+            model=llm_config.get('model')
+        )
+        
+        # Load prompts
+        self.prompt_loader = None
+        try:
+            from agent.prompts import PromptLoader
+            self.prompt_loader = PromptLoader()
+            self.system_prompt = self.prompt_loader.get('system_prompt') or ""
+        except Exception as e:
+            logger.warning(f"Failed to load prompts: {e}")
+            self.system_prompt = ""
+        
+        # Initialize core components ONCE
         self.memory = MemoryManager(config.get('memory', {}))
         self.knowledge = KnowledgeGraph()
         self.state_tracker = StateTracker()
         self.workflow_engine = WorkflowEngine(self.state_tracker, self.memory)
-        self.brain = Brain(self.memory, self.knowledge, self.state_tracker)
+        
+        # Initialize Brain with LLM and Prompts
+        self.brain = Brain(
+            self.memory, 
+            self.knowledge, 
+            self.state_tracker,
+            llm=self.llm,
+            prompt_loader=self.prompt_loader
+        )
+        
+        # Other components
         self.validator = Validator()
         self.auditor = Auditor(self.session_id)
         self.self_assessment = SelfAssessment([], self.memory)
         self.awareness = AgentAwareness(self.state_tracker, self.memory)
         self.meta_system = MetaSystem()
+        
+        # Skills management
+        self.skills_manager = None
+        try:
+            from agent.skills import SkillsManager
+            self.skills_manager = SkillsManager(self.config)
+        except Exception as e:
+            logger.warning(f"Failed to initialize SkillsManager: {e}")
+        
+        # Harness management
+        self.harness_manager = None
+        try:
+            from agent.harness import HarnessManager
+            self.harness_manager = HarnessManager(self.config)
+        except Exception as e:
+            logger.warning(f"Failed to initialize HarnessManager: {e}")
         
         self.target_profile = {}
         self.discoveries = []
@@ -50,13 +95,18 @@ class SecurityExpertAgent:
         self.start_time = datetime.now()
         self.state_tracker.transition_to("INITIALIZED", "Agent initialized")
         
+        # Register all skills
+        if self.skills_manager:
+            self.skills_manager.register_all(self.brain)
+        
         logger.info(f"Agent initialized with session ID: {self.session_id}")
         
         return {
             "status": "initialized",
             "session_id": self.session_id,
             "start_time": self.start_time.isoformat(),
-            "capabilities": self.config.get('capabilities', [])
+            "skills_count": len(self.brain.skills_registry) if hasattr(self.brain, 'skills_registry') else 0,
+            "harnesses_count": len(self.harness_manager.list_harnesses()) if self.harness_manager else 0
         }
     
     def start_task(self, user_requirement: str) -> Dict[str, Any]:
@@ -137,7 +187,7 @@ class SecurityExpertAgent:
                 skill_result = self.brain.execute_skill(skill_name, task)
                 execution_record['result'] = skill_result
                 execution_record['status'] = 'success'
-                execution_record['discoveries'] = skill_result.get('discoveries', [])
+                execution_record['discoveries'] = skill_result.get('findings', skill_result.get('discoveries', []))
             else:
                 execution_record['status'] = 'skipped'
                 execution_record['reason'] = 'No skill specified'

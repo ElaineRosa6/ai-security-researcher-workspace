@@ -14,16 +14,35 @@ logger = logging.getLogger(__name__)
 class Brain:
     """Central intelligence module for the agent"""
     
-    def __init__(self, memory, knowledge, state_tracker):
+    def __init__(self, memory, knowledge, state_tracker, llm=None, prompt_loader=None):
         self.memory = memory
         self.knowledge = knowledge
         self.state_tracker = state_tracker
         self.skills_registry = {}
+        self.llm = llm
+        self.prompt_loader = prompt_loader
         
     def register_skill(self, name: str, skill_instance: Any) -> None:
         """Register a skill in the brain"""
         self.skills_registry[name] = skill_instance
         logger.info(f"Registered skill: {name}")
+        
+    def set_llm(self, llm):
+        """Set LLM client"""
+        self.llm = llm
+        
+    def set_prompt_loader(self, prompt_loader):
+        """Set prompt loader"""
+        self.prompt_loader = prompt_loader
+        
+    def _ask_llm(self, user_prompt, system_prompt=None):
+        """Helper method to use LLM with fallbacks"""
+        if self.llm:
+            try:
+                return self.llm.ask(user_prompt, system_prompt=system_prompt)
+            except Exception as e:
+                logger.warning(f"LLM query failed: {e}, falling back to rules")
+        return None
     
     def parse_requirement(self, requirement_text: str) -> Dict[str, Any]:
         """Parse user requirement into structured format"""
