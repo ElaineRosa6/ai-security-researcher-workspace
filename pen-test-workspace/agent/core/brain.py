@@ -1,10 +1,11 @@
 """
 Agent Brain - Intelligent Decision Center
-Handles planning, execution, reasoning, and decision making
+Handles planning, reasoning, and decision making
 """
 
 import json
 import logging
+import re
 from typing import Dict, List, Optional, Any
 from datetime import datetime
 
@@ -14,7 +15,14 @@ logger = logging.getLogger(__name__)
 class Brain:
     """Central intelligence module for the agent"""
     
-    def __init__(self, memory, knowledge, state_tracker, llm=None, prompt_loader=None):
+    def __init__(
+        self,
+        memory: Any,
+        knowledge: Any,
+        state_tracker: Any,
+        llm: Optional[Any] = None,
+        prompt_loader: Optional[Any] = None
+    ):
         self.memory = memory
         self.knowledge = knowledge
         self.state_tracker = state_tracker
@@ -46,6 +54,9 @@ class Brain:
     
     def parse_requirement(self, requirement_text: str) -> Dict[str, Any]:
         """Parse user requirement into structured format"""
+        if not requirement_text or not isinstance(requirement_text, str):
+            raise ValueError("Requirement text must be a non-empty string")
+        
         logger.info(f"Parsing requirement: {requirement_text}")
         
         requirement = {
@@ -89,19 +100,16 @@ class Brain:
         
         if 'http' in text.lower() or 'www.' in text.lower():
             target['type'] = 'web'
-            import re
             url_match = re.search(r'https?://[^\s]+', text)
             if url_match:
                 target['value'] = url_match.group()
         elif any(kw in text.lower() for kw in ['domain', '域', 'ad ', 'active directory']):
             target['type'] = 'domain'
-            import re
             domain_match = re.search(r'[\w.-]+\.[\w]+', text)
             if domain_match:
                 target['value'] = domain_match.group()
         elif any(kw in text.lower() for kw in ['ip', '主机', 'host']):
             target['type'] = 'host'
-            import re
             ip_match = re.search(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', text)
             if ip_match:
                 target['value'] = ip_match.group()
@@ -382,13 +390,21 @@ class Brain:
                 skill = self.skills_registry[skill_module]
                 if hasattr(skill, skill_method):
                     method = getattr(skill, skill_method)
-                    result = method(**task.get('params', {}))
-                    return result
+                    try:
+                        result = method(**task.get('params', {}))
+                        return result
+                    except Exception as e:
+                        logger.error(f"Skill execution failed: {e}")
+                        return {"status": "error", "reason": str(e)}
+                else:
+                    logger.warning(f"Method {skill_method} not found in skill {skill_module}")
+                    return {"status": "skipped", "reason": f"Method {skill_method} not found"}
+            else:
+                logger.warning(f"Skill {skill_module} not registered")
+                return {"status": "skipped", "reason": f"Skill {skill_module} not registered"}
         
-        return {
-            "status": "skipped",
-            "reason": f"Skill {skill_name} not found or not implemented"
-        }
+        logger.warning(f"Invalid skill name format: {skill_name}")
+        return {"status": "skipped", "reason": f"Invalid skill name format: {skill_name}"}
     
     def decide_next_action(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """Decide next action based on current context"""

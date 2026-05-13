@@ -35,6 +35,8 @@ class OpenAIProvider(BaseLLMProvider):
             raise ImportError("Please install openai: pip install openai")
         
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
+        if not self.api_key:
+            raise ValueError("OpenAI API key is required. Set OPENAI_API_KEY environment variable or pass api_key parameter.")
         self.model = model
         self.client = openai.OpenAI(api_key=self.api_key)
     
@@ -64,6 +66,8 @@ class AnthropicProvider(BaseLLMProvider):
             raise ImportError("Please install anthropic: pip install anthropic")
         
         self.api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
+        if not self.api_key:
+            raise ValueError("Anthropic API key is required. Set ANTHROPIC_API_KEY environment variable or pass api_key parameter.")
         self.model = model
         self.client = anthropic.Anthropic(api_key=self.api_key)
     

@@ -177,11 +177,15 @@ class WorkflowEngine:
                 break
             
             self._execute_state_actions(current_state)
+            logger.info(f"State actions completed: {current_state}")
             
             next_state = self._decide_next_state()
+            logger.info(f"Next state decision: {next_state}")
             
             if next_state:
-                self.state_tracker.transition_to(next_state, "Workflow progression")
+                success = self.state_tracker.transition_to(next_state, "Workflow progression")
+                if not success:
+                    logger.error(f"Failed to transition to state: {next_state}")
             
             self._run_dynamic_adapters()
             
@@ -190,17 +194,23 @@ class WorkflowEngine:
         execution_result["end_time"] = datetime.now().isoformat()
         execution_result["final_state"] = self.state_tracker.get_current_state()
         
+        logger.info(f"Workflow execution completed: {execution_result['final_state']}")
+        
         return execution_result
     
     def execute_stage(self, stage_name: str) -> Dict[str, Any]:
         """Execute a single stage"""
+        logger.info(f"Executing stage: {stage_name}")
+        
         if not self.current_workflow:
+            logger.error("No workflow loaded")
             return {"status": "error", "message": "No workflow loaded"}
         
         stages = self.current_workflow.get('stages', [])
         stage = next((s for s in stages if s.get('name') == stage_name), None)
         
         if not stage:
+            logger.warning(f"Stage {stage_name} not found")
             return {"status": "error", "message": f"Stage {stage_name} not found"}
         
         result = {
@@ -210,16 +220,21 @@ class WorkflowEngine:
         }
         
         for task in stage.get('skills', []):
+            logger.info(f"Executing task in stage {stage_name}: {task}")
             task_result = self._execute_task(task)
             result['tasks'].append(task_result)
         
         result["end_time"] = datetime.now().isoformat()
         result["status"] = "completed"
         
+        logger.info(f"Stage {stage_name} completed with {len(result['tasks'])} tasks")
+        
         return result
     
     def _execute_state_actions(self, state: str) -> None:
         """Execute actions for current state"""
+        logger.debug(f"Executing actions for state: {state}")
+        
         if self.current_workflow:
             stages = self.current_workflow.get('stages', [])
             stage_name = self._state_to_stage_name(state)
@@ -227,8 +242,11 @@ class WorkflowEngine:
             stage = next((s for s in stages if s.get('name') == stage_name), None)
             
             if stage:
+                logger.info(f"Found stage {stage_name} with {len(stage.get('skills', []))} tasks")
                 for task in stage.get('skills', []):
                     self._execute_task(task)
+            else:
+                logger.warning(f"No stage definition found for state: {state}")
     
     def _execute_task(self, task: str) -> Dict[str, Any]:
         """Execute a single task"""
@@ -245,6 +263,7 @@ class WorkflowEngine:
         allowed_states = self.transition_rules.get(current_state, [])
         
         if not allowed_states:
+            logger.warning(f"No allowed transitions from state: {current_state}")
             return None
         
         context = self.state_tracker.get_context()
@@ -252,6 +271,7 @@ class WorkflowEngine:
         discoveries = context.get('requirement', {}).get('discoveries', [])
         
         if current_state == "RECON" and len(discoveries) > 0:
+            logger.info("Recon complete, moving to scanning")
             return "SCANNING"
         
         elif current_state == "SCANNING":
@@ -260,8 +280,10 @@ class WorkflowEngine:
         elif current_state == "VULN_ASSESS":
             exploitable = [d for d in discoveries if d.get('exploitable')]
             if len(exploitable) > 0:
+                logger.info(f"Found {len(exploitable)} exploitable vulnerabilities")
                 return "EXPLOITATION"
             else:
+                logger.info("No exploitable vulnerabilities found, moving to reporting")
                 return "REPORTING"
         
         elif current_state == "EXPLOITATION":

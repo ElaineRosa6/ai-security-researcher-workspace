@@ -4,11 +4,35 @@ Red Team Skills - Web Security Testing
 
 import json
 import logging
+import os
 import subprocess
 from typing import Dict, List, Optional, Any
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
+
+# SQL injection test payloads
+SQLI_PAYLOADS = ["'", "' OR '1'='1", "' OR 1=1--"]
+
+# XSS test payloads
+XSS_PAYLOADS = ["<script>alert(1)</script>", "<img src=x onerror=alert(1)>"]
+
+# Default wordlist fallback
+DEFAULT_WORDLIST_WORDS = ['admin', 'login', 'wp-admin', 'phpmyadmin', 'backup']
+
+# HTTP status codes indicating directory exists
+DIRECTORY_FOUND_STATUS_CODES = {'200', '301', '302', '403'}
+
+# SQL error indicators for detection
+SQL_ERROR_INDICATORS = ['sql', 'syntax', 'error', 'mysql', 'postgresql']
+
+# Sensitive header keys to extract
+SENSITIVE_HEADERS = ['server', 'x-powered-by', 'x-aspnet-version']
+
+# Curl timeout settings
+CURL_TIMEOUT_RECON = 10
+CURL_TIMEOUT_VULN = 10
+CURL_TIMEOUT_BRUTE = 5
 
 
 class WebSecuritySkill:
@@ -45,19 +69,25 @@ class WebSecuritySkill:
                 ["curl", "-s", "-I", target],
                 capture_output=True,
                 text=True,
-                timeout=10
+                timeout=CURL_TIMEOUT_RECON
             )
             
-            if result.returncode == 0:
-                headers = result.stdout
+            if result.returncode != 0:
+                logger.warning(f"curl command failed with code {result.returncode}")
+                return []
+            
+            headers = result.stdout
+            
+            server_info = self._parse_headers(headers)
+            
+            if server_info:
+                endpoints.append({
+                    "type": "server_info",
+                    "data": server_info
+                })
                 
-                server_info = self._parse_headers(headers)
-                
-                if server_info:
-                    endpoints.append({
-                        "type": "server_info",
-                        "data": server_info
-                    })
+        except subprocess.TimeoutExpired:
+            logger.warning(f"Request to {target} timed out")
         except Exception as e:
             logger.warning(f"Endpoint discovery failed: {e}")
         
@@ -73,7 +103,7 @@ class WebSecuritySkill:
                 key = key.strip().lower()
                 value = value.strip()
                 
-                if key in ['server', 'x-powered-by', 'x-aspnet-version']:
+                if key in SENSITIVE_HEADERS:
                     info[key] = value
         
         return info
@@ -163,11 +193,9 @@ class WebSecuritySkill:
         """Test for SQL injection"""
         findings = []
         
-        sqli_payloads = ["'", "' OR '1'='1", "' OR 1=1--"]
-        
         test_url = target if '?' in target else f"{target}/?id=1"
         
-        for payload in sqli_payloads:
+        for payload in SQLI_PAYLOADS:
             try:
                 test_target = f"{test_url}{payload}"
                 
@@ -175,12 +203,16 @@ class WebSecuritySkill:
                     ["curl", "-s", "-I", test_target],
                     capture_output=True,
                     text=True,
-                    timeout=10
+                    timeout=CURL_TIMEOUT_VULN
                 )
+                
+                if result.returncode != 0:
+                    logger.warning(f"curl command failed with code {result.returncode}")
+                    continue
                 
                 response = result.stdout.lower()
                 
-                if any(x in response for x in ['sql', 'syntax', 'error', 'mysql', 'postgresql']):
+                if any(x in response for x in SQL_ERROR_INDICATORS):
                     findings.append({
                         "type": "sql_injection",
                         "url": test_target,
@@ -189,6 +221,8 @@ class WebSecuritySkill:
                         "confidence": 0.7
                     })
                     break
+            except subprocess.TimeoutExpired:
+                logger.warning(f"SQLi test timed out for {test_target}")
             except Exception as e:
                 logger.warning(f"SQLi test failed: {e}")
         
@@ -198,9 +232,7 @@ class WebSecuritySkill:
         """Test for XSS vulnerabilities"""
         findings = []
         
-        xss_payloads = ["<script>alert(1)</script>", "<img src=x onerror=alert(1)>"]
-        
-        for payload in xss_payloads:
+        for payload in XSS_PAYLOADS:
             findings.append({
                 "type": "xss",
                 "target": target,
@@ -254,13 +286,22 @@ class WebSecuritySkill:
         
         directories = []
         
-        default_wordlist = f"{self.wordlists_path}/directory-wordlist.txt"
+        if wordlist:
+            wordlist_path = os.path.abspath(wordlist)
+            wordlists_base = os.path.abspath(self.wordlists_path)
+            if not wordlist_path.startswith(wordlists_base):
+                logger.error(f"Invalid wordlist path: {wordlist}")
+                wordlist = None
+        
+        default_wordlist = os.path.join(self.wordlists_path, 'directory-wordlist.txt')
+        wordlist_to_use = wordlist or default_wordlist
         
         try:
-            with open(default_wordlist, 'r') as f:
+            with open(wordlist_to_use, 'r') as f:
                 words = f.readlines()[:50]
-        except:
-            words = ['admin', 'login', 'wp-admin', 'phpmyadmin', 'backup']
+        except Exception:
+            logger.warning(f"Failed to read wordlist, using default words")
+            words = DEFAULT_WORDLIST_WORDS
         
         for word in words:
             word = word.strip()
@@ -274,18 +315,24 @@ class WebSecuritySkill:
                     ["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}", url],
                     capture_output=True,
                     text=True,
-                    timeout=5
+                    timeout=CURL_TIMEOUT_BRUTE
                 )
+                
+                if result.returncode != 0:
+                    logger.warning(f"curl command failed with code {result.returncode}")
+                    continue
                 
                 status_code = result.stdout.strip()
                 
-                if status_code in ['200', '301', '302', '403']:
+                if status_code in DIRECTORY_FOUND_STATUS_CODES:
                     directories.append({
                         "path": f"/{word}",
                         "status": status_code,
                         "discovered": True
                     })
-            except:
+            except subprocess.TimeoutExpired:
+                logger.warning(f"Request to {url} timed out")
+            except Exception:
                 pass
         
         return {
