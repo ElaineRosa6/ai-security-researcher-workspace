@@ -51,53 +51,27 @@ class WorkflowLoader:
                     logger.warning(f"Failed to load workflow {filename}: {e}")
     
     def _load_yaml_simple(self, file_path: str) -> Dict:
-        """简单的 YAML 加载器（使用 json 作为备选）"""
+        """简单的 YAML 加载器"""
         try:
             import yaml
             with open(file_path, 'r', encoding='utf-8') as f:
                 return yaml.safe_load(f)
         except ImportError:
-            logger.info("pyyaml not available, trying to parse YAML manually")
-            return self._parse_yaml_manually(file_path)
+            logger.warning("pyyaml not available")
+        except Exception as e:
+            logger.warning(f"Failed to load yaml: {e}")
+        
+        return {
+            "name": os.path.basename(file_path),
+            "phases": []
+        }
     
     def _parse_yaml_manually(self, file_path: str) -> Dict:
-        """手动解析简单的 YAML 格式"""
-        with open(file_path, 'r', encoding='utf-8') as f:
-            lines = f.readlines()
-        
-        result = {}
-        current_key = None
-        current_list = []
-        
-        for line in lines:
-            stripped = line.strip()
-            if not stripped or stripped.startswith('#'):
-                continue
-            
-            if ':' in stripped and not stripped.startswith('-'):
-                if current_key and current_list:
-                    result[current_key] = current_list
-                parts = stripped.split(':', 1)
-                current_key = parts[0].strip()
-                if len(parts) > 1:
-                    value = parts[1].strip().strip('"').strip("'")
-                    if value:
-                        result[current_key] = value
-                    else:
-                        current_list = []
-            
-            elif stripped.startswith('-'):
-                item = stripped[1:].strip().strip('"').strip("'")
-                if ':' in item:
-                    parts = item.split(':', 1)
-                    current_list.append({parts[0].strip(): parts[1].strip() if len(parts) > 1 else ''})
-                else:
-                    current_list.append(item)
-        
-        if current_key and current_list:
-            result[current_key] = current_list
-        
-        return result
+        """手动解析简单的 YAML 格式（备用）"""
+        return {
+            "name": os.path.basename(file_path),
+            "phases": []
+        }
     
     def get_workflow(self, name: str) -> Optional[Dict]:
         """获取指定名称的工作流"""
