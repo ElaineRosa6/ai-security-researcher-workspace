@@ -5,23 +5,84 @@ General Skills - Tools and Reporting
 import json
 import logging
 import subprocess
+import sys
+import os
 from typing import Dict, List, Optional, Any
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
+# Add parent directory to path
+parent_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+harness_path = os.path.join(parent_dir, 'harness')
+if harness_path not in sys.path:
+    sys.path.insert(0, harness_path)
 
-class ToolsSkill:
-    """General tools skill"""
+try:
+    from tool_executor import ToolExecutorFactory
+except ImportError:
+    logger.warning("ToolExecutor not available, using fallback methods")
+    ToolExecutorFactory = None
+
+
+class GeneralSkill:
+    """General skills including tools and reporting"""
     
     def __init__(self, config: Dict[str, Any] = None):
         self.config = config or {}
         self.output_path = self.config.get('output_path', 'output')
+        self._init_executors()
+    
+    def _init_executors(self):
+        """初始化工具执行器"""
+        self.executors = {}
+        if ToolExecutorFactory:
+            try:
+                self.executors["nmap"] = ToolExecutorFactory.create("nmap")
+                self.executors["sqlmap"] = ToolExecutorFactory.create("sqlmap")
+                self.executors["nuclei"] = ToolExecutorFactory.create("nuclei")
+            except Exception as e:
+                logger.warning(f"Failed to initialize tool executors: {e}")
     
     def nmap_scan(self, target: str, flags: str = "-sV -sC -p-", **kwargs) -> Dict[str, Any]:
-        """Run Nmap scan"""
+        """Run Nmap scan using integrated tool executor"""
         logger.info(f"Running Nmap scan on {target}")
         
+        if "nmap" in self.executors:
+            try:
+                executor = self.executors["nmap"]
+                result = executor.execute_nmap(target, flags)
+                
+                # Convert to standard format
+                findings = []
+                if result.get("success") and result.get("parsed"):
+                    ports = result["parsed"].get("ports", [])
+                    for port in ports:
+                        findings.append({
+                            "type": "port_open",
+                            "port": port.get("portid"),
+                            "protocol": port.get("protocol"),
+                            "state": port.get("state"),
+                            "service": port.get("service", {}),
+                            "discovered": True
+                        })
+                
+                return {
+                    "target": target,
+                    "flags": flags,
+                    "status": "completed" if result.get("success") else "error",
+                    "scan_results": result,
+                    "findings": findings,
+                    "timestamp": datetime.now().isoformat()
+                }
+            except Exception as e:
+                logger.error(f"Tool executor failed: {e}")
+        
+        # Fallback to original method
+        return self._fallback_nmap_scan(target, flags)
+    
+    def _fallback_nmap_scan(self, target: str, flags: str = "-sV -sC -p-") -> Dict[str, Any]:
+        """Fallback Nmap scan method"""
         results = {
             "target": target,
             "flags": flags,
@@ -68,19 +129,87 @@ class ToolsSkill:
         
         return results
     
-    def nuclei_scan(self, target: str, **kwargs) -> Dict[str, Any]:
-        """Run nuclei vulnerability scan"""
+    def nuclei_scan(self, target: str, templates: str = None, **kwargs) -> Dict[str, Any]:
+        """Run nuclei vulnerability scan using tool executor"""
         logger.info(f"Running nuclei scan on {target}")
         
-        results = {
+        if "nuclei" in self.executors:
+            try:
+                executor = self.executors["nuclei"]
+                result = executor.execute_nuclei(target, templates)
+                
+                findings = []
+                if result.get("success") and result.get("parsed"):
+                    for finding in result["parsed"].get("findings", []):
+                        findings.append({
+                            "type": finding.get("template", "unknown"),
+                            "severity": finding.get("severity", "medium"),
+                            "title": finding.get("template", ""),
+                            "description": finding.get("info", {}),
+                            "evidence": str(finding),
+                            "discovered": True
+                        })
+                
+                return {
+                    "target": target,
+                    "status": "completed" if result.get("success") else "error",
+                    "scan_results": result,
+                    "findings": findings,
+                    "timestamp": datetime.now().isoformat()
+                }
+            except Exception as e:
+                logger.error(f"Nuclei executor failed: {e}")
+        
+        # Fallback
+        return {
             "target": target,
+            "status": "info",
+            "command": f"nuclei -u {target}",
             "findings": [],
             "timestamp": datetime.now().isoformat()
         }
+    
+    def sqlmap_scan(self, url: str, options: Dict[str, Any] = None, **kwargs) -> Dict[str, Any]:
+        """Run SQLMap scan using tool executor"""
+        logger.info(f"Running SQLMap on {url}")
         
-        results["command"] = f"nuclei -u {target}"
+        if "sqlmap" in self.executors:
+            try:
+                executor = self.executors["sqlmap"]
+                result = executor.execute_sqlmap(url, options)
+                
+                findings = []
+                if result.get("success") and result.get("parsed"):
+                    vulns = result["parsed"].get("vulnerabilities", [])
+                    for vuln in vulns:
+                        findings.append({
+                            "type": "sql_injection",
+                            "vuln_type": vuln,
+                            "severity": "critical",
+                            "title": f"SQL Injection - {vuln}",
+                            "description": f"Target {url} appears vulnerable to {vuln}",
+                            "evidence": str(result.get("raw", {}).get("stdout", "")),
+                            "discovered": True
+                        })
+                
+                return {
+                    "target": url,
+                    "status": "completed" if result.get("success") else "error",
+                    "scan_results": result,
+                    "findings": findings,
+                    "timestamp": datetime.now().isoformat()
+                }
+            except Exception as e:
+                logger.error(f"SQLMap executor failed: {e}")
         
-        return results
+        # Fallback
+        return {
+            "target": url,
+            "status": "info",
+            "command": f"sqlmap -u {url}",
+            "findings": [],
+            "timestamp": datetime.now().isoformat()
+        }
     
     def execute_command(self, command: str, timeout: int = 60, **kwargs) -> Dict[str, Any]:
         """Execute shell command"""

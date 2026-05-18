@@ -273,7 +273,7 @@ class Brain:
         tasks.append({
             "id": "recon_osint",
             "name": "OSINT Information Gathering",
-            "skill": "ToolsSkill.osint",
+            "skill": "GeneralSkill.osint",
             "params": {"target": target_value}
         })
         
@@ -288,7 +288,7 @@ class Brain:
         tasks.append({
             "id": "scan_nmap",
             "name": "Nmap Port Scan",
-            "skill": "ToolsSkill.nmap_scan",
+            "skill": "GeneralSkill.nmap_scan",
             "params": {"target": target_value, "flags": "-sV -sC -p-"}
         })
         
@@ -317,7 +317,7 @@ class Brain:
         tasks.append({
             "id": "vuln_nuclei",
             "name": "Template-based Vulnerability Scan",
-            "skill": "ToolsSkill.nuclei_scan",
+            "skill": "GeneralSkill.nuclei_scan",
             "params": {}
         })
         
@@ -375,7 +375,7 @@ class Brain:
         return [{
             "id": "report_generate",
             "name": "Generate Report",
-            "skill": "ReportingSkill.generate_pentest_report",
+            "skill": "GeneralSkill.generate_pentest_report",
             "params": {}
         }]
     
